@@ -1,16 +1,68 @@
-# This is a sample Python script.
+import cv2, time
+import numpy as np
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+cv2.startWindowThread()
+
+cap = cv2.VideoCapture(0)
+
+base_image = None
+
+start_time = time.time()
+
+while(True):
+    # reading the frame
+    ret, frame = cap.read()
+
+    ##convert to grayscale
+    gray_scale = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+
+    gray_scale = cv2.GaussianBlur(gray_scale, (21,21), 0)
+
+    motion = 0
+
+    curr_time = time.time()
+    delta_time = curr_time - start_time
+
+    if base_image is None or delta_time > 10.0:
+        base_image = gray_scale
+        start_time = curr_time
+
+    diff_frame = cv2.absdiff(base_image, gray_scale)
+
+    thresh_frame = cv2.threshold(diff_frame, 15, 255, cv2.THRESH_BINARY)[1]
+    thresh_frame = cv2.dilate(thresh_frame, None, iterations=2)
+
+    cnts, _ = cv2.findContours(thresh_frame.copy(),
+                               cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    for contour in cnts:
+        if cv2.contourArea(contour) < 10000:
+            continue
+        motion = 1
 
+        (x, y, w, h) = cv2.boundingRect(contour)
+        # making green rectangle around the moving object
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    # Displaying image in gray_scale
+    cv2.imshow("Gray Frame", gray_scale)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    # Displaying the difference in currentframe to
+    # the staticframe(very first_frame)
+    cv2.imshow("Difference Frame", diff_frame)
+
+    # Displaying the black and white image in which if
+    # intensity difference greater than 30 it will appear white
+    cv2.imshow("Threshold Frame", thresh_frame)
+
+    # Displaying color frame with contour of motion of object
+    cv2.imshow("Color Frame", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        # breaking the loop if the user types q
+        # note that the video window must be highlighted!
+        break
+
+cap.release()
+cv2.destroyAllWindows()
