@@ -9,6 +9,10 @@ base_image = None
 
 start_time = time.time()
 
+fps=20
+
+interval = int(1000/fps)
+
 while(True):
     # reading the frame
     ret, frame = cap.read()
@@ -18,7 +22,7 @@ while(True):
 
     gray_scale = cv2.GaussianBlur(gray_scale, (21,21), 0)
 
-    motion = 0
+    motion = False
 
     curr_time = time.time()
     delta_time = curr_time - start_time
@@ -37,9 +41,9 @@ while(True):
 
 
     for contour in cnts:
-        if cv2.contourArea(contour) < 10000:
+        if cv2.contourArea(contour) < 5000:
             continue
-        motion = 1
+        motion = True
 
         (x, y, w, h) = cv2.boundingRect(contour)
         # making green rectangle around the moving object
@@ -59,7 +63,7 @@ while(True):
     # Displaying color frame with contour of motion of object
     cv2.imshow("Color Frame", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(interval) & 0xFF == ord('q'):
         # breaking the loop if the user types q
         # note that the video window must be highlighted!
         break
