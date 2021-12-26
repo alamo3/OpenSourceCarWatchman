@@ -5,6 +5,8 @@ cv2.startWindowThread()
 
 cap = cv2.VideoCapture(0)
 
+face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+
 base_image = None
 
 start_time = time.time()
@@ -19,6 +21,8 @@ while(True):
 
     ##convert to grayscale
     gray_scale = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+
+    faces = face_cascade.detectMultiScale(gray_scale, scaleFactor=1.3, minNeighbors=5)
 
     gray_scale = cv2.GaussianBlur(gray_scale, (21,21), 0)
 
@@ -40,6 +44,7 @@ while(True):
                                cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 
+
     for contour in cnts:
         if cv2.contourArea(contour) < 5000:
             continue
@@ -48,6 +53,9 @@ while(True):
         (x, y, w, h) = cv2.boundingRect(contour)
         # making green rectangle around the moving object
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+    for (x,y,w,h) in faces:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 3)
 
     # Displaying image in gray_scale
     cv2.imshow("Gray Frame", gray_scale)
