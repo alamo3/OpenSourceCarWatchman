@@ -1,0 +1,25 @@
+<MyGrid>
+    GridLayout:
+        cols: 2
+        size: root.width, root.height
+
+        GridLayout:
+            rows: 3
+            size: (root.width/4),root.height
+            size_hint: None,None
+
+            Button:
+                text: "Arm"
+
+            Button:
+                text: "Events"
+
+            Button:
+                text: "Settings"
+
+        GridLayout:
+            id: stat
+            rows: 1
+            Label:
+                text: "statistics"
+
