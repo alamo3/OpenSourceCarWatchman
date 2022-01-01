@@ -1,3 +1,4 @@
 venv/*
 .idea/*
 *.mp4
+*.pyc
