@@ -1,13 +1,12 @@
 import cv2, time
-import numpy as np
+from Algorithm import Pipeline
+
+from Camera import CameraManager
+
+
+camManager = CameraManager.CamManager()
 
 cv2.startWindowThread()
-
-cap = cv2.VideoCapture(0)
-
-face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-
-base_image = None
 
 start_time = time.time()
 
@@ -15,40 +14,24 @@ fps=20
 
 interval = int(1000/fps)
 
+
 while(True):
     # reading the frame
-    ret, frame = cap.read()
+    ret, frame = camManager.get_image()
 
-    ##convert to grayscale
-    gray_scale = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    base_image = camManager.get_recent_image()
 
-    faces = face_cascade.detectMultiScale(gray_scale, scaleFactor=1.3, minNeighbors=5)
-
-    gray_scale = cv2.GaussianBlur(gray_scale, (21,21), 0)
-
-    motion = False
+    faces, cnts, motion, diff_frame, thresh_frame = Pipeline.run_pipeline(frame, base_image)
 
     curr_time = time.time()
     delta_time = curr_time - start_time
 
-    if base_image is None or delta_time > 10.0:
-        base_image = gray_scale
+    if delta_time > 4.0:
+        camManager.next_camera()
+        camManager.update_recent_image()
         start_time = curr_time
 
-    diff_frame = cv2.absdiff(base_image, gray_scale)
-
-    thresh_frame = cv2.threshold(diff_frame, 15, 255, cv2.THRESH_BINARY)[1]
-    thresh_frame = cv2.dilate(thresh_frame, None, iterations=2)
-
-    cnts, _ = cv2.findContours(thresh_frame.copy(),
-                               cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-
-
     for contour in cnts:
-        if cv2.contourArea(contour) < 5000:
-            continue
-        motion = True
 
         (x, y, w, h) = cv2.boundingRect(contour)
         # making green rectangle around the moving object
@@ -57,8 +40,6 @@ while(True):
     for (x,y,w,h) in faces:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 3)
 
-    # Displaying image in gray_scale
-    cv2.imshow("Gray Frame", gray_scale)
 
     # Displaying the difference in currentframe to
     # the staticframe(very first_frame)
@@ -67,14 +48,18 @@ while(True):
     # Displaying the black and white image in which if
     # intensity difference greater than 30 it will appear white
     cv2.imshow("Threshold Frame", thresh_frame)
-
     # Displaying color frame with contour of motion of object
+    frame = cv2.putText(img= frame, text="Camera "+str(camManager.current_cam + 1), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(0, 255, 0), thickness=2, org=(0,20))
+    frame = cv2.putText(img= frame, text="Motion: "+str(motion), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1, color=(0, 255, 0) if motion else (0,0,255), thickness=2, org=(0,40))
+
     cv2.imshow("Color Frame", frame)
+
+
 
     if cv2.waitKey(interval) & 0xFF == ord('q'):
         # breaking the loop if the user types q
         # note that the video window must be highlighted!
         break
 
-cap.release()
+camManager.shutdown_camera_manager()
 cv2.destroyAllWindows()
