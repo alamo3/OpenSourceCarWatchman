@@ -2,7 +2,10 @@ import cv2, time
 from Algorithm import Pipeline
 
 from Camera import CameraManager
+from Network import NetworkManager
 
+netManager = NetworkManager.NetworkManager()
+netManager.test_connectivity()
 
 camManager = CameraManager.CamManager()
 
