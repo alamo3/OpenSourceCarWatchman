@@ -7,7 +7,14 @@ class NetworkManager:
 
     def __init__(self):
         self.ip = get('https://api.ipify.org').content.decode('utf8')
-        print("IP Address of this device is: {0}".format(self.ip))
+        print("IP Address of this network is: {0}".format(self.ip))
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+
+        self.device_ip = s.getsockname()[0]
+        print("Local IP Address of this device is: {0}".format(self.device_ip))
+        s.close()
 
 
 
@@ -28,17 +35,15 @@ class NetworkManager:
     def test_connectivity(self):
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(bytes("Test UDP request", 'utf-8'), ("127.0.0.1", 61115))
 
-        sock.close()
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind(("localhost", 18422))
+        sock.bind((self.device_ip, COMM_PORT))
         sock.settimeout(3.0)
-
         try:
-            data = sock.recv(4096)
+            data, address = sock.recvfrom(4096)
             print(data.decode('utf-8'))
+
+            sock.sendto(bytes("Hello client"), address)
+
         except:
             print("No data received, faulty connection?")
 
